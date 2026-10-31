@@ -76,7 +76,14 @@ Open your browser at `http://localhost:8501` to view the dashboard.
 │   └── secrets.toml         # Secret API keys configuration
 └── temp_uploaded_traffic.mp4# Temporary video cache for file processing
 ```
+Project Credits
+Project Name: AURA CHATBOT
 
+Project Designed & Developed By: SKYWOOD INNOVATORS & AI MARKHORS
+
+Project Lead: Engr. Bilal Mehmood
+
+Project Vision: To build an intelligent sports assistant that combines AI-powered conversations, sports statistics, player analysis, and professional reporting in one platform.
 ---
 
 ## 📜 License

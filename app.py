@@ -67,7 +67,7 @@ if "twitch_redemptions" not in st.session_state:
 if "twitch_poll_votes" not in st.session_state:
     st.session_state.twitch_poll_votes = {"Safe": 42, "Hazardous": 18, "Emergency": 5}
 
-# --- ANIMATED WELCOME POPUP (AUTO-CLOSES AFTER 5 SECONDS) ---
+# --- UNIVERSAL 5-SECOND AUTO-CLOSE WELCOME POPUP ---
 @st.dialog("🚗 Welcome to AISIMULATOR (Twitch Hackathon Edition)", width="medium")
 def show_welcome_popup():
     st.markdown("""
@@ -93,13 +93,13 @@ def show_welcome_popup():
             <p>Powered by <b>YOLO26</b>, OpenCV, <b>GPT Luna</b>, and Twitch Interactive Chat 🎮</p>
             <div class="blinking-light">🟣 🤖 🟣</div>
             <p style="font-size: 13px; color: gray;">Twitch EventSub & Streamer Mode Active!</p>
-            <p style="font-size: 12px; color: #9146FF; font-weight: bold;">⏱️ Auto-entering dashboard in 5 seconds...</p>
+            <p style="font-size: 12px; color: #9146FF; font-weight: bold;">⏱️ Auto-closing & entering dashboard in exactly 5 seconds...</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
 
-    # JavaScript Auto-clicker for 5-second timer
+    # Strict 5-second JS auto-close trigger for welcome modal
     st.components.v1.html("""
         <script>
             setTimeout(function() {
@@ -203,14 +203,14 @@ def get_model(model_name):
 
 model = get_model(selected_model)
 
-# --- FLASHING BIG-SCREEN MODAL (AUTO-CLOSES AFTER 5 SECONDS) ---
+# --- TALKING POPUP & CUSTOM OBJECT MODAL (STRICT 5-SECOND AUTO-CLOSE) ---
 def render_flashing_object_modal(object_name, info_text=""):
     current_time = time.time()
     
     # Trigger audio announcement stating object name immediately and repeat every 5 seconds until closed
     if (current_time - st.session_state.last_alert_time >= 5.0):
         st.session_state.last_alert_time = current_time
-        speech_text = f"Object detected! {object_name}!"
+        speech_text = f"Talking Alert! Custom object detected! {object_name}!"
         st.components.v1.html(f"""
             <script>
                 const utterance = new SpeechSynthesisUtterance("{speech_text}");
@@ -219,7 +219,7 @@ def render_flashing_object_modal(object_name, info_text=""):
             </script>
         """, height=0)
 
-    # Big screen flash banner with close button and 5-second auto-close timer
+    # Big screen flash banner with talking dialogue and 5-second auto-close timer
     st.markdown(f"""
         <style>
         @keyframes big-flash {{
@@ -240,13 +240,13 @@ def render_flashing_object_modal(object_name, info_text=""):
         </style>
         
         <div class="big-screen-flash-box" id="alert-box">
-            <h1 style="margin: 0; font-size: 38px;">🚨 OBJECT DETECTED: {object_name.upper()}! 🚨</h1>
+            <h1 style="margin: 0; font-size: 38px;">🗣️ TALKING ALERT: CUSTOM OBJECT '{object_name.upper()}' DETECTED! 🚨</h1>
             <p style="font-size: 18px; margin-top: 10px;">{info_text}</p>
-            <p style="font-size: 14px; color: #ffcccc;">⏱️ Auto-closing in 5 seconds...</p>
+            <p style="font-size: 14px; color: #ffcccc; font-weight: bold;">⏱️ Talking popup auto-closing in exactly 5 seconds...</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # JavaScript auto-closer for 5 seconds (5000 ms)
+    # Strict 5-second JS auto-closer for object/talking modals
     st.components.v1.html("""
         <script>
             setTimeout(function() {

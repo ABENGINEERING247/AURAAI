@@ -59,7 +59,15 @@ if "twitch_chat_actions" not in st.session_state:
         {"user": "StreamerBot", "action": "!status", "response": "System nominal. Warden Billu on duty!"}
     ]
 
-# --- ANIMATED WELCOME POPUP ---
+if "twitch_redemptions" not in st.session_state:
+    st.session_state.twitch_redemptions = [
+        {"user": "Gamer123", "reward": "Trigger Emergency Brake", "bits_points": "500 Bits / Points", "time": "18:45:00"}
+    ]
+
+if "twitch_poll_votes" not in st.session_state:
+    st.session_state.twitch_poll_votes = {"Safe": 42, "Hazardous": 18, "Emergency": 5}
+
+# --- ANIMATED WELCOME POPUP (AUTO-CLOSES AFTER 5 SECONDS) ---
 @st.dialog("🚗 Welcome to AISIMULATOR (Twitch Hackathon Edition)", width="medium")
 def show_welcome_popup():
     st.markdown("""
@@ -84,16 +92,30 @@ def show_welcome_popup():
             <h2>🟣 Codex x TwitchCon Hackathon Suite</h2>
             <p>Powered by <b>YOLO26</b>, OpenCV, <b>GPT Luna</b>, and Twitch Interactive Chat 🎮</p>
             <div class="blinking-light">🟣 🤖 🟣</div>
-            <p style="font-size: 13px; color: gray;">Twitch EventSub ready. Streamer mode active!</p>
+            <p style="font-size: 13px; color: gray;">Twitch EventSub & Streamer Mode Active!</p>
+            <p style="font-size: 12px; color: #9146FF; font-weight: bold;">⏱️ Auto-entering dashboard in 5 seconds...</p>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
-    if st.button("🚀 Enter AISIMULATOR Dashboard", type="primary", use_container_width=True):
+
+    # JavaScript Auto-clicker for 5-second timer
+    st.components.v1.html("""
+        <script>
+            setTimeout(function() {
+                const autoEnterBtn = window.parent.document.querySelector('button[kind="primary"]');
+                if (autoEnterBtn) {
+                    autoEnterBtn.click();
+                }
+            }, 5000);
+        </script>
+    """, height=0)
+
+    if st.button("🚀 Enter AISIMULATOR Dashboard", type="primary", use_container_width=True, key="welcome_enter_btn"):
         st.session_state.welcomed = True
         st.rerun()
 
-if "welcomed" not in st.session_state:
+if "welcomed" not in st.session_state or not st.session_state.welcomed:
     st.session_state.welcomed = False
     show_welcome_popup()
 
@@ -181,12 +203,12 @@ def get_model(model_name):
 
 model = get_model(selected_model)
 
-# --- FLASHING BIG-SCREEN MODAL & 10-SECOND AUTO-CLOSE TIMER ---
+# --- FLASHING BIG-SCREEN MODAL (AUTO-CLOSES AFTER 5 SECONDS) ---
 def render_flashing_object_modal(object_name, info_text=""):
     current_time = time.time()
     
-    # Trigger audio announcement stating object name immediately and repeat every 10 seconds until closed
-    if (current_time - st.session_state.last_alert_time >= 10.0):
+    # Trigger audio announcement stating object name immediately and repeat every 5 seconds until closed
+    if (current_time - st.session_state.last_alert_time >= 5.0):
         st.session_state.last_alert_time = current_time
         speech_text = f"Object detected! {object_name}!"
         st.components.v1.html(f"""
@@ -197,7 +219,7 @@ def render_flashing_object_modal(object_name, info_text=""):
             </script>
         """, height=0)
 
-    # Big screen flash banner with close button and 10-second auto-close timer
+    # Big screen flash banner with close button and 5-second auto-close timer
     st.markdown(f"""
         <style>
         @keyframes big-flash {{
@@ -220,19 +242,21 @@ def render_flashing_object_modal(object_name, info_text=""):
         <div class="big-screen-flash-box" id="alert-box">
             <h1 style="margin: 0; font-size: 38px;">🚨 OBJECT DETECTED: {object_name.upper()}! 🚨</h1>
             <p style="font-size: 18px; margin-top: 10px;">{info_text}</p>
-            <p style="font-size: 14px; color: #ffcccc;">Auto-closing in 10 seconds...</p>
+            <p style="font-size: 14px; color: #ffcccc;">⏱️ Auto-closing in 5 seconds...</p>
         </div>
-        
-        <script>
-            // Automatically clear the alert state after 10 seconds (10000 ms)
-            setTimeout(function() {{
-                const closeBtn = document.getElementById('auto-close-btn');
-                if (closeBtn) {{
-                    closeBtn.click();
-                }}
-            }}, 10000);
-        </script>
     """, unsafe_allow_html=True)
+
+    # JavaScript auto-closer for 5 seconds (5000 ms)
+    st.components.v1.html("""
+        <script>
+            setTimeout(function() {
+                const closeBtn = window.parent.document.querySelector('button[key="auto-close-btn"]');
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            }, 5000);
+        </script>
+    """, height=0)
 
     col_close1, col_close2, col_close3 = st.columns([1, 2, 1])
     with col_close2:
@@ -1085,59 +1109,181 @@ elif source_option == "📚 Road Safety 100-Question Test":
                     st.markdown("---")
 
 elif source_option == "🎮 Twitch Hackathon Chat & Overlay Hub":
-    st.subheader("🟣 Codex x TwitchCon Hackathon: Interactive Chat & Stream Overlay Hub")
-    st.markdown("Connect your stream chat to allow viewers to execute commands (`!hazard`, `!status`, `!billu`), trigger safety votes, and stream Warden Billu commentary directly into Twitch!")
+    st.subheader("🟣 Codex x TwitchCon Hackathon: Interactive Chat, Bits & OBS Stream Overlay Hub")
+    st.markdown("Connect your stream chat to allow viewers to execute commands (`!hazard`, `!status`, `!billu`), trigger safety votes, redeem Channel Points/Bits, and project live stream overlays directly into OBS!")
 
-    col_tw1, col_tw2 = st.columns(2)
-    with col_tw1:
-        st.markdown("### ⚙️ Twitch EventSub & Bot Configuration")
-        twitch_channel = st.text_input("Twitch Channel Username:", "warden_billu_live")
-        bot_prefix = st.text_input("Chat Command Prefix:", "!")
-        enable_tts_alerts = st.checkbox("Enable Live Twitch TTS Voice Alerts for Chat", value=True)
-        
-        if st.button("🔗 Connect to Twitch IRC / EventSub", type="primary"):
-            st.success(f"Successfully connected to Twitch channel: **{twitch_channel}**! EventSub webhooks active.")
+    tw_tab1, tw_tab2, tw_tab3, tw_tab4 = st.tabs([
+        "💬 Interactive Chat & Bot", 
+        "💎 Channel Points & Bits Redemptions", 
+        "📊 Audience Hazard Voting", 
+        "📺 OBS Stream Overlay HUD"
+    ])
 
-    with col_tw2:
-        st.markdown("### 📊 Active Community Voting & Metrics")
-        st.metric("Connected Twitch Viewers", "1,420 👥")
-        st.metric("Chat Hazard Votes (Last 60s)", "89 Votes")
-        st.progress(0.75, text="Community Safety Consensus: 75% Safe")
+    with tw_tab1:
+        col_tw1, col_tw2 = st.columns(2)
+        with col_tw1:
+            st.markdown("### ⚙️ Twitch EventSub & Bot Configuration")
+            twitch_channel = st.text_input("Twitch Channel Username:", "warden_billu_live")
+            bot_prefix = st.text_input("Chat Command Prefix:", "!")
+            enable_tts_alerts = st.checkbox("Enable Live Twitch TTS Voice Alerts for Chat", value=True)
+            
+            if st.button("🔗 Connect to Twitch IRC / EventSub", type="primary"):
+                st.success(f"Successfully connected to Twitch channel: **{twitch_channel}**! EventSub webhooks active.")
 
-    st.markdown("---")
-    st.markdown("### 💬 Live Twitch Chat Command Simulator & Feed")
-    st.markdown("Test chat commands interactively or view simulated incoming viewer triggers for your stream overlay:")
+        with col_tw2:
+            st.markdown("### 📊 Active Stream Metrics")
+            st.metric("Connected Twitch Viewers", "1,420 👥")
+            st.metric("Chat Hazard Trigger Count", f"{len(st.session_state.twitch_chat_actions)} Triggers")
 
-    sim_col1, sim_col2 = st.columns([3, 1])
-    with sim_col1:
-        test_chat_command = st.selectbox(
-            "Simulate Incoming Chat Command:",
-            ["!hazard", "!status", "!billu safe driving tips", "!speed", "!brake"]
-        )
-    with sim_col2:
-        viewer_name = st.text_input("Viewer Username", "TwitchViewer99")
+        st.markdown("---")
+        st.markdown("### 💬 Live Twitch Chat Command Simulator")
 
-    if st.button("🚀 Trigger Chat Command", type="primary"):
-        if test_chat_command == "!hazard":
-            resp = "🚨 Viewer triggered hazard scan! Warden Billu checking proximity limits."
-            st.session_state.active_hazard_object = "Pedestrian / Obstacle"
-            st.session_state.last_alert_time = 0.0
-        elif test_chat_command == "!status":
-            resp = f"🟢 Status: YOLO26 running `{selected_model}`. All systems operational."
-        elif test_chat_command == "!billu safe driving tips":
-            resp = "👮‍♂️ Warden Billu says: 'Always keep 3 seconds distance and check your blind spots, folks! Beep beep!'"
-        elif test_chat_command == "!speed":
-            resp = "⚡ Current simulated speed: 65 MPH. Speed limit: 60 MPH. Caution advised!"
-        else:
-            resp = "🛑 Emergency brake requested by Twitch chat!"
+        sim_col1, sim_col2 = st.columns([3, 1])
+        with sim_col1:
+            test_chat_command = st.selectbox(
+                "Simulate Incoming Chat Command:",
+                ["!hazard", "!status", "!billu safe driving tips", "!speed", "!brake"]
+            )
+        with sim_col2:
+            viewer_name = st.text_input("Viewer Username", "TwitchViewer99")
 
-        st.session_state.twitch_chat_actions.insert(0, {
-            "user": viewer_name,
-            "action": test_chat_command,
-            "response": resp
-        })
-        st.success(f"Executed `{test_chat_command}` from **{viewer_name}**: {resp}")
+        if st.button("🚀 Trigger Chat Command", type="primary"):
+            if test_chat_command == "!hazard":
+                resp = "🚨 Viewer triggered hazard scan! Warden Billu checking proximity limits."
+                st.session_state.active_hazard_object = "Pedestrian / Obstacle"
+                st.session_state.last_alert_time = 0.0
+            elif test_chat_command == "!status":
+                resp = f"🟢 Status: YOLO26 running `{selected_model}`. All systems operational."
+            elif test_chat_command == "!billu safe driving tips":
+                resp = "👮‍♂️ Warden Billu says: 'Always keep 3 seconds distance and check your blind spots, folks! Beep beep!'"
+            elif test_chat_command == "!speed":
+                resp = "⚡ Current simulated speed: 65 MPH. Speed limit: 60 MPH. Caution advised!"
+            else:
+                resp = "🛑 Emergency brake requested by Twitch chat!"
 
-    st.markdown("#### 📜 Recent Twitch Interaction Logs")
-    df_chat = pd.DataFrame(st.session_state.twitch_chat_actions)
-    st.dataframe(df_chat, use_container_width=True)
+            st.session_state.twitch_chat_actions.insert(0, {
+                "user": viewer_name,
+                "action": test_chat_command,
+                "response": resp
+            })
+            st.success(f"Executed `{test_chat_command}` from **{viewer_name}**: {resp}")
+
+        st.markdown("#### 📜 Recent Twitch Interaction Logs")
+        df_chat = pd.DataFrame(st.session_state.twitch_chat_actions)
+        st.dataframe(df_chat, use_container_width=True)
+
+    with tw_tab2:
+        st.markdown("### 💎 Twitch Channel Points & Bits Reward Triggers")
+        st.markdown("Viewers can spend Channel Points or Cheer Bits to trigger in-game safety events or AI Warden Billu actions!")
+
+        col_red1, col_red2 = st.columns([2, 1])
+        with col_red1:
+            red_user = st.text_input("Simulate Redemption User:", "SuperFan42")
+            red_reward = st.selectbox("Select Reward Redeemed:", [
+                "Trigger Emergency Brake (500 Bits)",
+                "Spawn AI Traffic Warden (250 Channel Points)",
+                "Warden Billu Custom Voice Shoutout (1000 Bits)",
+                "Highlight Nearest Pedestrian Hazard (100 Channel Points)"
+            ])
+            if st.button("🎁 Simulate EventSub Channel Point / Bits Trigger", type="primary"):
+                now_str = datetime.now().strftime("%H:%M:%S")
+                st.session_state.twitch_redemptions.insert(0, {
+                    "user": red_user,
+                    "reward": red_reward,
+                    "bits_points": red_reward.split("(")[-1].replace(")", ""),
+                    "time": now_str
+                })
+                if "Emergency Brake" in red_reward:
+                    st.session_state.active_hazard_object = "Emergency Brake Event"
+                    st.session_state.last_alert_time = 0.0
+                st.success(f"Redemption processed for **{red_user}**: `{red_reward}`!")
+
+        with col_red2:
+            st.markdown("#### 🏆 Recent Stream Redemptions")
+            df_red = pd.DataFrame(st.session_state.twitch_redemptions)
+            st.dataframe(df_red, use_container_width=True)
+
+    with tw_tab3:
+        st.markdown("### 📊 Audience Live Hazard Voting Poll")
+        st.markdown("Let chat decide whether the upcoming road section is Safe, Hazardous, or Emergency level.")
+
+        vote_col1, vote_col2, vote_col3 = st.columns(3)
+        with vote_col1:
+            if st.button("👍 Vote SAFE (+1)", use_container_width=True):
+                st.session_state.twitch_poll_votes["Safe"] += 1
+                st.rerun()
+        with vote_col2:
+            if st.button("⚠️ Vote HAZARDOUS (+1)", use_container_width=True):
+                st.session_state.twitch_poll_votes["Hazardous"] += 1
+                st.rerun()
+        with vote_col3:
+            if st.button("🚨 Vote EMERGENCY (+1)", use_container_width=True):
+                st.session_state.twitch_poll_votes["Emergency"] += 1
+                st.rerun()
+
+        total_votes = sum(st.session_state.twitch_poll_votes.values()) or 1
+        safe_pct = (st.session_state.twitch_poll_votes["Safe"] / total_votes) * 100
+        haz_pct = (st.session_state.twitch_poll_votes["Hazardous"] / total_votes) * 100
+        emerg_pct = (st.session_state.twitch_poll_votes["Emergency"] / total_votes) * 100
+
+        st.markdown("#### Live Community Consensus:")
+        st.progress(safe_pct / 100, text=f"🟢 Safe: {safe_pct:.1f}% ({st.session_state.twitch_poll_votes['Safe']} votes)")
+        st.progress(haz_pct / 100, text=f"⚠️ Hazardous: {haz_pct:.1f}% ({st.session_state.twitch_poll_votes['Hazardous']} votes)")
+        st.progress(emerg_pct / 100, text=f"🚨 Emergency: {emerg_pct:.1f}% ({st.session_state.twitch_poll_votes['Emergency']} votes)")
+
+    with tw_tab4:
+        st.markdown("### 📺 Stream Overlay HUD (Browser Source for OBS)")
+        st.markdown("Copy the transparent HTML code below into an **OBS Browser Source** to show real-time Twitch hazard telemetry over your stream!")
+
+        active_obj_display = st.session_state.active_hazard_object or "NONE"
+        overlay_html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{
+            background-color: transparent;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }}
+        .hud-box {{
+            background: rgba(15, 15, 35, 0.85);
+            border: 2px solid #9146FF;
+            border-radius: 12px;
+            padding: 15px 25px;
+            width: 320px;
+            box-shadow: 0 0 15px rgba(145, 70, 255, 0.6);
+        }}
+        .hud-title {{
+            font-size: 16px;
+            font-weight: bold;
+            color: #9146FF;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }}
+        .hud-value {{
+            font-size: 22px;
+            font-weight: bold;
+            color: #00FFCC;
+            margin-top: 5px;
+        }}
+        .hud-status {{
+            margin-top: 10px;
+            font-size: 13px;
+            color: #E4E4E4;
+        }}
+    </style>
+</head>
+<body>
+    <div class="hud-box">
+        <div class="hud-title">🚥 AISIMULATOR STREAM HUD</div>
+        <div class="hud-value">HAZARD: {active_obj_display.upper()}</div>
+        <div class="hud-status">👮‍♂️ Warden Billu: Active | Twitch Chat Syncing</div>
+    </div>
+</body>
+</html>
+"""
+        st.components.v1.html(overlay_html, height=160)
+        st.code(overlay_html, language="html")

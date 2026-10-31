@@ -54,6 +54,9 @@ if "active_hazard_object" not in st.session_state:
 if "last_alert_time" not in st.session_state:
     st.session_state.last_alert_time = 0.0
 
+if "current_severity" not in st.session_state:
+    st.session_state.current_severity = "NORMAL"
+
 if "twitch_chat_actions" not in st.session_state:
     st.session_state.twitch_chat_actions = [
         {"user": "StreamerBot", "action": "!status", "response": "System nominal. Warden Billu on duty!"}
@@ -99,7 +102,6 @@ def show_welcome_popup():
     
     st.markdown("---")
 
-    # Strict 5-second JS auto-close trigger for welcome modal
     st.components.v1.html("""
         <script>
             setTimeout(function() {
@@ -203,50 +205,58 @@ def get_model(model_name):
 
 model = get_model(selected_model)
 
-# --- TALKING POPUP & CUSTOM OBJECT MODAL (STRICT 5-SECOND AUTO-CLOSE) ---
-def render_flashing_object_modal(object_name, info_text=""):
+# --- MULTI-TIER TALKING POPUP & CUSTOM OBJECT MODAL ---
+def render_flashing_object_modal(object_name, hazard_count, severity_level="MEDIUM", info_text=""):
     current_time = time.time()
     
-    # Trigger audio announcement stating object name immediately and repeat every 5 seconds until closed
+    # Trigger audio announcement based on severity tier every 5 seconds
     if (current_time - st.session_state.last_alert_time >= 5.0):
         st.session_state.last_alert_time = current_time
-        speech_text = f"Talking Alert! Custom object detected! {object_name}!"
+        
+        if severity_level == "HIGH":
+            speech_text = f"Critical Emergency! {hazard_count} hazards at high proximity! Brake immediately!"
+            speech_rate = 1.2
+            flash_color = "#ff0000"
+        else:
+            speech_text = f"Caution! {hazard_count} hazards detected within collision range."
+            speech_rate = 1.0
+            flash_color = "#ff3333"
+
         st.components.v1.html(f"""
             <script>
                 const utterance = new SpeechSynthesisUtterance("{speech_text}");
-                utterance.rate = 1.0;
+                utterance.rate = {speech_rate};
+                utterance.pitch = {1.2 if severity_level == 'HIGH' else 1.0};
                 window.speechSynthesis.speak(utterance);
             </script>
         """, height=0)
 
-    # Big screen flash banner with talking dialogue and 5-second auto-close timer
     st.markdown(f"""
         <style>
-        @keyframes big-flash {{
+        @keyframes severity-flash {{
             0% {{ background-color: #1f4068; transform: scale(1); }}
-            50% {{ background-color: #ff3333; transform: scale(1.02); }}
+            50% {{ background-color: {flash_color if 'flash_color' in locals() else '#ff3333'}; transform: scale(1.02); }}
             100% {{ background-color: #1f4068; transform: scale(1); }}
         }}
-        .big-screen-flash-box {{
-            animation: big-flash 0.6s infinite ease-in-out;
+        .severity-flash-box {{
+            animation: severity-flash {0.4 if severity_level == 'HIGH' else 0.7}s infinite ease-in-out;
             border: 4px solid #ffffff;
             border-radius: 15px;
             padding: 30px;
             text-align: center;
             color: white;
-            box-shadow: 0 0 30px rgba(255, 51, 51, 0.8);
+            box-shadow: 0 0 30px {flash_color if 'flash_color' in locals() else '#ff3333'};
             margin-bottom: 20px;
         }}
         </style>
         
-        <div class="big-screen-flash-box" id="alert-box">
-            <h1 style="margin: 0; font-size: 38px;">🗣️ TALKING ALERT: CUSTOM OBJECT '{object_name.upper()}' DETECTED! 🚨</h1>
-            <p style="font-size: 18px; margin-top: 10px;">{info_text}</p>
-            <p style="font-size: 14px; color: #ffcccc; font-weight: bold;">⏱️ Talking popup auto-closing in exactly 5 seconds...</p>
+        <div class="severity-flash-box">
+            <h1 style="margin: 0; font-size: 38px;">🚨 {severity_level} SEVERITY: {hazard_count} HAZARD(S) IN RANGE! 🗣️</h1>
+            <p style="font-size: 18px; margin-top: 10px;">Primary Object: {object_name.upper()} | {info_text}</p>
+            <p style="font-size: 14px; color: #ffcccc; font-weight: bold;">⏱️ Auto-closing in 5 seconds...</p>
         </div>
     """, unsafe_allow_html=True)
 
-    # Strict 5-second JS auto-closer for object/talking modals
     st.components.v1.html("""
         <script>
             setTimeout(function() {
@@ -262,6 +272,7 @@ def render_flashing_object_modal(object_name, info_text=""):
     with col_close2:
         if st.button("✖ CLOSE ALERT", type="primary", use_container_width=True, key="auto-close-btn"):
             st.session_state.active_hazard_object = None
+            st.session_state.current_severity = "NORMAL"
             st.session_state.last_alert_time = 0.0
             st.rerun()
 
@@ -534,6 +545,7 @@ if source_option == "Media / Document Upload (Up to 400MB)":
             active_objects = len(boxes)
             v_counts = classify_all_entities(boxes, results[0].boxes)
             current_risk = False
+            severity_level = "NORMAL"
             min_dist = float("inf")
 
             if active_objects >= 2:
@@ -547,29 +559,47 @@ if source_option == "Media / Document Upload (Up to 400MB)":
                             min_dist = dist
                         if dist < proximity_limit:
                             current_risk = True
+                            if dist < (proximity_limit * 0.5) or active_objects > 3:
+                                severity_level = "HIGH"
+                            else:
+                                severity_level = "MEDIUM"
                             cv2.line(annotated, (int(c1[0]), int(c1[1])), (int(c2[0]), int(c2[1])), (0, 0, 255), 3)
 
             warning_count = 0
             if current_risk:
                 warning_count = 1
                 instruction_text = "Reduce speed immediately, yield to pedestrians/trucks/ambulances, and prepare to brake."
-                cv2.putText(annotated, "WARNING: HAZARD PROXIMITY DETECTED", (25, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
-                status_alert.error("🚨 Collision risk detected in uploaded image!")
+                cv2.putText(annotated, f"WARNING: {severity_level} HAZARD PROXIMITY", (25, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
+                status_alert.error(f"🚨 {severity_level} Collision risk detected in uploaded image!")
+                
+                st.session_state.current_severity = severity_level
+
+                if st.session_state.last_alert_time == 0.0 or (time.time() - st.session_state.last_alert_time >= 5.0):
+                    st.session_state.twitch_chat_actions.insert(0, {
+                        "user": "WardenBilluBot",
+                        "action": f"!alert_{severity_level.lower()}",
+                        "response": f"⚠️ STREAM ALERT: {severity_level} severity hazard proximity breach detected! Active hazards: {active_objects}"
+                    })
+
+                if st.session_state.active_hazard_object is None:
+                    detected_obj_name = "Object"
+                    for box in results[0].boxes:
+                        cls_id = int(box.cls[0])
+                        detected_obj_name = model.names.get(cls_id, "Object")
+                        break
+                    st.session_state.active_hazard_object = detected_obj_name
+
+                render_flashing_object_modal(
+                    object_name=st.session_state.active_hazard_object, 
+                    hazard_count=active_objects, 
+                    severity_level=severity_level,
+                    info_text=f"Objects breached proximity limit with {severity_level.lower()} severity rating."
+                )
             else:
                 instruction_text = "Traffic flow clear. Maintain safe speed and remain alert."
                 status_alert.success("🟢 Scene stable.")
-
-            if active_objects > 0 and st.session_state.active_hazard_object is None:
-                detected_obj_name = "Object"
-                for box in results[0].boxes:
-                    cls_id = int(box.cls[0])
-                    detected_obj_name = model.names.get(cls_id, "Object")
-                    break
-                st.session_state.active_hazard_object = detected_obj_name
-                st.session_state.last_alert_time = 0.0
-
-            if st.session_state.active_hazard_object is not None:
-                render_flashing_object_modal(st.session_state.active_hazard_object, f"Total active objects in view: {active_objects}")
+                st.session_state.current_severity = "NORMAL"
+                st.session_state.active_hazard_object = None
 
             metric_box_objects.metric("Active Objects Tracked", active_objects)
             metric_box_warnings.metric("Collision Warnings", warning_count)
@@ -621,6 +651,7 @@ if source_option == "Media / Document Upload (Up to 400MB)":
                 active_objects = len(boxes)
                 v_counts = classify_all_entities(boxes, results[0].boxes)
                 current_risk = False
+                severity_level = "NORMAL"
                 min_dist = float("inf")
 
                 if active_objects >= 2:
@@ -634,28 +665,46 @@ if source_option == "Media / Document Upload (Up to 400MB)":
                                 min_dist = dist
                             if dist < proximity_limit:
                                 current_risk = True
+                                if dist < (proximity_limit * 0.5) or active_objects > 3:
+                                    severity_level = "HIGH"
+                                else:
+                                    severity_level = "MEDIUM"
                                 cv2.line(annotated, (int(c1[0]), int(c1[1])), (int(c2[0]), int(c2[1])), (0, 0, 255), 3)
 
                 if current_risk:
                     warning_count += 1
                     instruction_text = "Reduce speed immediately, yield right-of-way, and increase following distance."
-                    cv2.putText(annotated, "WARNING: HAZARD PROXIMITY DETECTED", (25, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
-                    status_alert.error("🚨 Collision risk detected in video frame!")
+                    cv2.putText(annotated, f"WARNING: {severity_level} HAZARD PROXIMITY", (25, 45), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 3)
+                    status_alert.error(f"🚨 {severity_level} Collision risk detected in video frame!")
+                    
+                    st.session_state.current_severity = severity_level
+
+                    if st.session_state.last_alert_time == 0.0 or (time.time() - st.session_state.last_alert_time >= 5.0):
+                        st.session_state.twitch_chat_actions.insert(0, {
+                            "user": "WardenBilluBot",
+                            "action": f"!alert_{severity_level.lower()}",
+                            "response": f"⚠️ STREAM ALERT: {severity_level} severity hazard proximity breach detected! Active hazards: {active_objects}"
+                        })
+
+                    if st.session_state.active_hazard_object is None:
+                        detected_obj_name = "Object"
+                        for box in results[0].boxes:
+                            cls_id = int(box.cls[0])
+                            detected_obj_name = model.names.get(cls_id, "Object")
+                            break
+                        st.session_state.active_hazard_object = detected_obj_name
+
+                    render_flashing_object_modal(
+                        object_name=st.session_state.active_hazard_object, 
+                        hazard_count=active_objects, 
+                        severity_level=severity_level,
+                        info_text=f"Objects breached proximity limit in video frame!"
+                    )
                 else:
                     instruction_text = "Maintain steady cruising speed and stay alert."
                     status_alert.success("🟢 Traffic flow stable.")
-
-                if active_objects > 0 and st.session_state.active_hazard_object is None:
-                    detected_obj_name = "Object"
-                    for box in results[0].boxes:
-                        cls_id = int(box.cls[0])
-                        detected_obj_name = model.names.get(cls_id, "Object")
-                        break
-                    st.session_state.active_hazard_object = detected_obj_name
-                    st.session_state.last_alert_time = 0.0
-
-                if st.session_state.active_hazard_object is not None:
-                    render_flashing_object_modal(st.session_state.active_hazard_object, f"Active objects in frame: {active_objects}")
+                    st.session_state.current_severity = "NORMAL"
+                    st.session_state.active_hazard_object = None
 
                 st.session_state.simulation_logs.append({
                     "Date & Time": current_datetime,
@@ -694,7 +743,8 @@ if source_option == "Media / Document Upload (Up to 400MB)":
             elif file_extension == "docx":
                 doc = Document(uploaded_file)
                 for para in doc.paragraphs:
-                    extracted_text += para.text + "\n"
+                    extracted_text += para.text + "
+"
             elif file_extension == "txt":
                 extracted_text = uploaded_file.read().decode("utf-8")
 
@@ -794,6 +844,7 @@ elif source_option == "Live Webcam":
         active_objects = len(boxes)
         v_counts = classify_all_entities(boxes, results[0].boxes)
         current_risk = False
+        severity_level = "NORMAL"
         min_dist = float("inf")
 
         if active_objects >= 2:
@@ -807,28 +858,46 @@ elif source_option == "Live Webcam":
                         min_dist = dist
                     if dist < proximity_limit:
                         current_risk = True
+                        if dist < (proximity_limit * 0.5) or active_objects > 3:
+                            severity_level = "HIGH"
+                        else:
+                            severity_level = "MEDIUM"
                         cv2.line(annotated, (int(c1[0]), int(c1[1])), (int(c2[0]), int(c2[1])), (0, 0, 255), 3)
 
         warning_count = 0
         if current_risk:
             warning_count = 1
             instruction_text = "Slow down instantly, watch for pedestrians/trucks, and stay defensive."
-            status_alert.error("🚨 Collision risk detected in snapshot!")
+            status_alert.error(f"🚨 {severity_level} Collision risk detected in snapshot!")
+            
+            st.session_state.current_severity = severity_level
+
+            if st.session_state.last_alert_time == 0.0 or (time.time() - st.session_state.last_alert_time >= 5.0):
+                st.session_state.twitch_chat_actions.insert(0, {
+                    "user": "WardenBilluBot",
+                    "action": f"!alert_{severity_level.lower()}",
+                    "response": f"⚠️ STREAM ALERT: {severity_level} severity hazard proximity breach detected! Active hazards: {active_objects}"
+                })
+
+            if st.session_state.active_hazard_object is None:
+                detected_obj_name = "Object"
+                for box in results[0].boxes:
+                    cls_id = int(box.cls[0])
+                    detected_obj_name = model.names.get(cls_id, "Object")
+                    break
+                st.session_state.active_hazard_object = detected_obj_name
+
+            render_flashing_object_modal(
+                object_name=st.session_state.active_hazard_object, 
+                hazard_count=active_objects, 
+                severity_level=severity_level,
+                info_text=f"Webcam proximity breach detected!"
+            )
         else:
             instruction_text = "Normal operation. Maintain regular safe speed limits."
             status_alert.success("🟢 Frame stable.")
-
-        if active_objects > 0 and st.session_state.active_hazard_object is None:
-            detected_obj_name = "Object"
-            for box in results[0].boxes:
-                cls_id = int(box.cls[0])
-                detected_obj_name = model.names.get(cls_id, "Object")
-                break
-            st.session_state.active_hazard_object = detected_obj_name
-            st.session_state.last_alert_time = 0.0
-
-        if st.session_state.active_hazard_object is not None:
-            render_flashing_object_modal(st.session_state.active_hazard_object, f"Webcam active objects detected: {active_objects}")
+            st.session_state.current_severity = "NORMAL"
+            st.session_state.active_hazard_object = None
 
         st.session_state.simulation_logs.append({
             "Date & Time": current_datetime,
@@ -1148,12 +1217,27 @@ elif source_option == "🎮 Twitch Hackathon Chat & Overlay Hub":
             viewer_name = st.text_input("Viewer Username", "TwitchViewer99")
 
         if st.button("🚀 Trigger Chat Command", type="primary"):
+            current_sev = st.session_state.get("current_severity", "NORMAL")
+            active_obj = st.session_state.get("active_hazard_object", "None")
+
             if test_chat_command == "!hazard":
-                resp = "🚨 Viewer triggered hazard scan! Warden Billu checking proximity limits."
-                st.session_state.active_hazard_object = "Pedestrian / Obstacle"
-                st.session_state.last_alert_time = 0.0
+                if current_sev in ["HIGH", "MEDIUM"]:
+                    resp = f"🚨 THREAT REPORT: Active severity is {current_sev}! Detected hazard object: '{active_obj.upper()}'. Warden Billu advises caution!"
+                else:
+                    resp = f"🟢 Threat Report: All clear! Current status is nominal with no active proximity breaches."
+                
+                if enable_tts_alerts:
+                    tts_announcement = f"Twitch chat alert from {viewer_name}! Hazard command received. Current threat level is {current_sev}."
+                    st.components.v1.html(f"""
+                        <script>
+                            const chatUtterance = new SpeechSynthesisUtterance("{tts_announcement}");
+                            chatUtterance.rate = 1.1;
+                            window.speechSynthesis.speak(chatUtterance);
+                        </script>
+                    """, height=0)
+
             elif test_chat_command == "!status":
-                resp = f"🟢 Status: YOLO26 running `{selected_model}`. All systems operational."
+                resp = f"🟢 Status: YOLO26 running `{selected_model}`. Threat Level: {current_sev}."
             elif test_chat_command == "!billu safe driving tips":
                 resp = "👮‍♂️ Warden Billu says: 'Always keep 3 seconds distance and check your blind spots, folks! Beep beep!'"
             elif test_chat_command == "!speed":
@@ -1195,6 +1279,7 @@ elif source_option == "🎮 Twitch Hackathon Chat & Overlay Hub":
                 })
                 if "Emergency Brake" in red_reward:
                     st.session_state.active_hazard_object = "Emergency Brake Event"
+                    st.session_state.current_severity = "HIGH"
                     st.session_state.last_alert_time = 0.0
                 st.success(f"Redemption processed for **{red_user}**: `{red_reward}`!")
 
@@ -1235,7 +1320,22 @@ elif source_option == "🎮 Twitch Hackathon Chat & Overlay Hub":
         st.markdown("### 📺 Stream Overlay HUD (Browser Source for OBS)")
         st.markdown("Copy the transparent HTML code below into an **OBS Browser Source** to show real-time Twitch hazard telemetry over your stream!")
 
+        current_sev = st.session_state.get("current_severity", "NORMAL")
         active_obj_display = st.session_state.active_hazard_object or "NONE"
+        
+        if current_sev == "HIGH":
+            border_color = "#FF0000"
+            bg_color = "rgba(255, 0, 0, 0.3)"
+            status_text = "🚨 CRITICAL RISK"
+        elif current_sev == "MEDIUM":
+            border_color = "#FF9900"
+            bg_color = "rgba(255, 153, 0, 0.3)"
+            status_text = "⚠️ CAUTION RISK"
+        else:
+            border_color = "#9146FF"
+            bg_color = "rgba(15, 15, 35, 0.85)"
+            status_text = "🟢 SYSTEM NOMINAL"
+
         overlay_html = f"""
 <!DOCTYPE html>
 <html>
@@ -1249,41 +1349,43 @@ elif source_option == "🎮 Twitch Hackathon Chat & Overlay Hub":
             padding: 20px;
         }}
         .hud-box {{
-            background: rgba(15, 15, 35, 0.85);
-            border: 2px solid #9146FF;
+            background: {bg_color};
+            border: 3px solid {border_color};
             border-radius: 12px;
             padding: 15px 25px;
-            width: 320px;
-            box-shadow: 0 0 15px rgba(145, 70, 255, 0.6);
+            width: 340px;
+            box-shadow: 0 0 20px {border_color};
+            transition: all 0.3s ease-in-out;
         }}
         .hud-title {{
             font-size: 16px;
             font-weight: bold;
-            color: #9146FF;
+            color: {border_color};
             text-transform: uppercase;
             letter-spacing: 1px;
         }}
         .hud-value {{
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
-            color: #00FFCC;
+            color: #FFFFFF;
             margin-top: 5px;
         }}
         .hud-status {{
-            margin-top: 10px;
+            margin-top: 8px;
             font-size: 13px;
             color: #E4E4E4;
+            font-weight: bold;
         }}
     </style>
 </head>
 <body>
     <div class="hud-box">
         <div class="hud-title">🚥 AISIMULATOR STREAM HUD</div>
-        <div class="hud-value">HAZARD: {active_obj_display.upper()}</div>
-        <div class="hud-status">👮‍♂️ Warden Billu: Active | Twitch Chat Syncing</div>
+        <div class="hud-value">STATUS: {status_text}</div>
+        <div class="hud-status">Object: {active_obj_display.upper()} | Warden Billu Active</div>
     </div>
 </body>
 </html>
 """
-        st.components.v1.html(overlay_html, height=160)
+        st.components.v1.html(overlay_html, height=180)
         st.code(overlay_html, language="html")

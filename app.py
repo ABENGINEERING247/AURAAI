@@ -70,7 +70,8 @@ if "twitch_poll_votes" not in st.session_state:
 # --- UNIVERSAL 5-SECOND AUTO-CLOSE WELCOME POPUP ---
 @st.dialog("🚗 Welcome to AISIMULATOR (Twitch Hackathon Edition)", width="medium")
 def show_welcome_popup():
-    st.markdown("""
+    st.markdown(
+        """
         <style>
         @keyframes headlight-blink {
             0% { opacity: 0.2; transform: scale(0.9); }
@@ -94,3 +95,75 @@ def show_welcome_popup():
             <div class="blinking-light">🟣 🤖 🟣</div>
             <p style="font-size: 13px; color: gray;">Twitch EventSub & Streamer Mode Active!</p>
             <p style="font-size: 12px; color: #9146FF; font-weight: bold;">⏱️ Auto-closing & entering dashboard in exactly 5 seconds...</p>
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("---")
+
+    # Strict 5-second JS auto-close trigger for welcome modal
+    st.components.v1.html(
+        """
+        <script>
+            setTimeout(function() {
+                const autoEnterBtn = window.parent.document.querySelector('button[kind="primary"]');
+                if (autoEnterBtn) {
+                    autoEnterBtn.click();
+                }
+            }, 5000);
+        </script>
+        """, 
+        height=0
+    )
+
+    if st.button("🚀 Enter AISIMULATOR Dashboard", type="primary", use_container_width=True, key="welcome_enter_btn"):
+        st.session_state.welcomed = True
+        st.rerun()
+
+if "welcomed" not in st.session_state or not st.session_state.welcomed:
+    st.session_state.welcomed = False
+    show_welcome_popup()
+
+# --- TRAFFIC HEADER BANNER ---
+st.markdown(
+    """
+    <div style="background: linear-gradient(90deg, #1f4068, #9146FF); padding: 20px; border-radius: 10px; color: white; text-align: center; margin-bottom: 20px;">
+        <h1 style="margin: 0; font-size: 32px;">🚥 AISIMULATOR: TWITCH HACKATHON HAZARD SUITE</h1>
+        <p style="margin: 5px 0 0 0; font-size: 15px; color: #e4e4e4;">Multi-Format Auditing, Entity Detection & Live Twitch Chat Commands</p>
+    </div>
+    """, 
+    unsafe_allow_html=True
+)
+
+# 2. Sidebar Control Panel
+st.sidebar.header("Control Panel")
+selected_model = st.sidebar.selectbox("YOLO Model Engine", ["yolo26n.pt", "yolo26s.pt"])
+conf_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 0.9, 0.45, 0.05)
+proximity_limit = st.sidebar.slider("Collision Proximity Limit (px)", 30, 250, 80, 5)
+
+voice_alerts_enabled = st.sidebar.checkbox(
+    "🔊 Enable spoken hazard alerts",
+    value=False,
+    help="Turn this on once to allow your browser to speak hazard counts. Browser audio permissions may apply."
+)
+
+source_option = st.sidebar.radio(
+    "Select Input Source / Mode", 
+    [
+        "Media / Document Upload (Up to 400MB)", 
+        "Live Webcam", 
+        "🧠 Custom Object / Face Training Studio", 
+        "📚 Road Safety 100-Question Test",
+        "🎮 Twitch Hackathon Chat & Overlay Hub"
+    ]
+)
+
+# 3. OpenAI & GPT Luna Configuration
+st.sidebar.markdown("---")
+st.sidebar.subheader("👮‍♂️ Warden Billu (GPT Luna Assistant)")
+
+if "OPENAI_API_KEY" in st.secrets:
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+else:
+    client = None

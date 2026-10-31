@@ -743,7 +743,7 @@ if source_option == "Media / Document Upload (Up to 400MB)":
             elif file_extension == "docx":
                 doc = Document(uploaded_file)
                 for para in doc.paragraphs:
-                    extracted_text += para.text + "\n""
+                    extracted_text += para.text + "\n"
             elif file_extension == "txt":
                 extracted_text = uploaded_file.read().decode("utf-8")
 

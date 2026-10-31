@@ -181,7 +181,7 @@ def get_model(model_name):
 
 model = get_model(selected_model)
 
-# --- FLASHING BIG-SCREEN MODAL & 5-SECOND AUTO-CLOSE TIMER ---
+# --- FLASHING BIG-SCREEN MODAL & 10-SECOND AUTO-CLOSE TIMER ---
 def render_flashing_object_modal(object_name, info_text=""):
     current_time = time.time()
     
@@ -197,7 +197,7 @@ def render_flashing_object_modal(object_name, info_text=""):
             </script>
         """, height=0)
 
-    # Big screen flash banner with close button and 5-second auto-close timer
+    # Big screen flash banner with close button and 10-second auto-close timer
     st.markdown(f"""
         <style>
         @keyframes big-flash {{
@@ -220,17 +220,17 @@ def render_flashing_object_modal(object_name, info_text=""):
         <div class="big-screen-flash-box" id="alert-box">
             <h1 style="margin: 0; font-size: 38px;">🚨 OBJECT DETECTED: {object_name.upper()}! 🚨</h1>
             <p style="font-size: 18px; margin-top: 10px;">{info_text}</p>
-            <p style="font-size: 14px; color: #ffcccc;">Auto-closing in 5 seconds...</p>
+            <p style="font-size: 14px; color: #ffcccc;">Auto-closing in 10 seconds...</p>
         </div>
         
         <script>
-            // Automatically clear the alert state after 5 seconds (5000 ms)
+            // Automatically clear the alert state after 10 seconds (10000 ms)
             setTimeout(function() {{
                 const closeBtn = document.getElementById('auto-close-btn');
                 if (closeBtn) {{
                     closeBtn.click();
                 }}
-            }}, 5000);
+            }}, 10000);
         </script>
     """, unsafe_allow_html=True)
 

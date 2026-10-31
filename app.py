@@ -26,8 +26,24 @@ st.markdown("""
 .stApp {background:linear-gradient(135deg,#07111f 0%,#0b1d32 55%,#10283b 100%);color:#f4f7fb}
 h1,h2,h3 {color:#f5f8ff}
 [data-testid="stMetric"]{background:#10263c;padding:16px;border:1px solid #24445f;border-radius:14px}
-div[data-testid="stTabs"] button{font-weight:700}
 .aura-sub{color:#a8c2d8}
+
+/* Force Navigation Tab Text to Pure White */
+div[data-testid="stTabs"] button {
+    font-weight: 700 !important;
+    color: #ffffff !important;
+}
+
+/* Selected Tab Color Highlight */
+div[data-testid="stTabs"] button[aria-selected="true"] {
+    color: #ffffff !important;
+    border-bottom: 2px solid #4da6ff !important;
+}
+
+/* Sidebar Text Color Fix */
+section[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -77,7 +93,6 @@ def football_players():
     if not FOOTBALL_API_KEY:
         return None, "No API_FOOTBALL_KEY configured. Showing sample ranking."
     try:
-        # API-Sports football player statistics endpoint. Select league/season below.
         league = st.session_state.get("league_id", 39)
         season = st.session_state.get("season", 2025)
         url="https://v3.football.api-sports.io/players"
@@ -101,7 +116,6 @@ def football_players():
         return None, f"Football provider error: {e}"
 
 def cricket_players():
-    # CricAPI data access varies by subscription. This integration uses its player list endpoint.
     if not CRICKET_API_KEY:
         return None, "No CRICAPI_KEY configured. Showing sample ranking."
     try:

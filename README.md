@@ -1,65 +1,84 @@
-# AURA Sports Intelligence
+# 🚥 AISIMULATOR: Twitch Hackathon Hazard Suite
 
-AURA is a Streamlit AI sports assistant for cricket and football. It includes:
-- OpenAI-powered conversational assistant
-- Cricket and football knowledge assistant
-- Player data/ranking page with provider adapters
-- Editable tabular report builder
-- PDF, DOCX and CSV export
-- Twitch community-mode concept and suggested commands
+**AISIMULATOR** is an interactive, real-time traffic safety auditing, entity detection, and hazard simulation dashboard built for the **Codex x TwitchCon Hackathon**. Powered by **YOLO26**, OpenCV, **GPT Luna (Warden Billu)**, and Streamlit, the application offers multi-format media auditing, custom object training, automated PDF reporting, and live Twitch chat integration.
 
-## 1. Run locally (Windows)
+---
 
-```powershell
-cd AURA_CHATBOT
+## ✨ Features
+
+- **📷 Multi-Format Media Auditing**: Process images (`.jpg`, `.png`), video feeds (`.mp4`, `.avi`, `.mov`), and document policies (`.pdf`, `.docx`, `.txt`) up to 400MB.
+- **🚨 Real-Time Hazard Proximity Alerts**: Calculates spatial Euclidean distances between detected entities to trigger live visual flashing banners and Web Speech API audio announcements with a 10-second auto-close timer.
+- **👮‍♂️ Warden Billu (GPT Luna Assistant)**: An interactive, friendly traffic police assistant in the sidebar providing driving advice, fines breakdown, and road safety guidance.
+- **🧠 Custom Entity & Face Training Studio**: Register custom entity classes or faces with uploaded sample images, test detection on live webcam feeds, and generate/export custom PyTorch (`.pt`) model weights alongside `data.yaml` files.
+- **📚 100-Question Road Safety Exam**: Interactive assessment covering traffic regulations, signs, and emergency protocols, generating a downloadable **PDF Certificate of Competency** or Assessment Notice.
+- **🎮 Twitch Interactive Chat Hub**: Simulates and receives Twitch chat commands (`!hazard`, `!status`, `!billu`, `!speed`, `!brake`) to integrate directly into live stream overlays.
+- **📋 Cumulative Audit Logging & PDF Export**: Automatically tracks frame telemetry, entity counts (cars, trucks, buses, ambulances, persons with masks/disabilities), and exports comprehensive PDF/CSV reports.
+
+---
+
+## 🛠️ Prerequisites & Installation
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/aisimulator.git
+cd aisimulator
+```
+
+### 2. Set Up a Virtual Environment
+```bash
 python -m venv venv
+# On Windows
 venv\Scripts\activate
-python -m pip install -r requirements.txt
+# On macOS/Linux
+source venv/bin/activate
+```
+
+### 3. Install Requirements
+Create a `requirements.txt` file (or install directly) with the following dependencies:
+
+```bash
+pip install streamlit opencv-python-headless numpy pandas pillow openai ultralytics fpdf pypdf python-docx torch
+```
+
+---
+
+## 🔑 Configuration
+
+To enable **Warden Billu (GPT Luna)** assistant, set up your OpenAI API key using Streamlit's secrets management:
+
+1. Create a `.streamlit` folder in the project root.
+2. Create a `secrets.toml` file inside `.streamlit/`:
+
+```toml
+OPENAI_API_KEY = "your-openai-api-key-here"
+```
+
+---
+
+## 🚀 Running the Application
+
+Launch the Streamlit app:
+
+```bash
 streamlit run app.py
 ```
 
-## 2. Configure API keys
+Open your browser at `http://localhost:8501` to view the dashboard.
 
-Create `.streamlit/secrets.toml` (do not commit this file):
+---
 
-```toml
-OPENAI_API_KEY = "your-key"
-OPENAI_MODEL = "gpt-4o-mini"
-API_FOOTBALL_KEY = "your-api-sports-key"
-CRICAPI_KEY = "your-cricapi-key"
-TWITCH_CLIENT_ID = "optional"
-TWITCH_CLIENT_SECRET = "optional"
+## 📁 Project Structure
+
+```text
+├── app.py                   # Main Streamlit application entry point
+├── README.md                # Project documentation
+├── .streamlit/
+│   └── secrets.toml         # Secret API keys configuration
+└── temp_uploaded_traffic.mp4# Temporary video cache for file processing
 ```
 
-The app also reads environment variables. The included `secrets.toml.example` is a template only.
+---
 
-## 3. Deploy on Streamlit Community Cloud
+## 📜 License
 
-1. Create a GitHub repository and upload `app.py`, `requirements.txt`, and `README.md`.
-2. Open Streamlit Community Cloud and deploy the repository with `app.py` as the entry point.
-3. In the deployed app's **Settings → Secrets**, paste the TOML secrets.
-4. Reboot the app after adding or changing secrets.
-
-Never upload real API keys or `.streamlit/secrets.toml` to GitHub.
-
-## 4. Live sports data and ranking caveats
-
-- Football adapter uses API-Sports football `/players` statistics, sorted by goals and assists for the selected league and season. This is a computed leaderboard, not an official FIFA ranking.
-- Cricket adapter currently reads CricAPI's player directory. A player directory is **not** an official ICC ranking. To show official ICC batting, bowling and all-rounder rankings, connect a licensed/provider endpoint that supplies those ranking categories and rank positions. Do not label sample data as live.
-- Provider subscriptions, endpoint access, request quotas and season availability vary. Check the provider's current documentation and account plan before launch.
-- For truly live scores, fixtures, standings and match events, add provider endpoints and cache responses with a short TTL. Respect provider terms and attribution requirements.
-
-## 5. Twitch hackathon extension
-
-The current app includes a streamer control panel concept and command design. For a production Twitch integration:
-- Register a Twitch application and configure OAuth securely.
-- Run a separate TwitchIO bot or Twitch EventSub/IRC service.
-- Send allowed chat questions to the AURA backend and moderate/rate-limit replies.
-- Add streamer controls for enable/disable, allowed commands, cooldowns and safety filters.
-- Keep Twitch client secrets and tokens in deployment secrets, never in source control.
-
-Suggested commands: `!aura`, `!cricketquiz`, `!footballquiz`, `!compare`, `!matchreport`, `!rules`.
-
-## 6. Important product boundary
-
-AURA can explain rules, tactics, formats, history and statistics. AI-generated analysis is not an official ruling or source of truth. Real-time scores, player availability, rankings and transfers must come from a connected and authorized data provider.
+Distributed under the MIT License. See `LICENSE` for more information.

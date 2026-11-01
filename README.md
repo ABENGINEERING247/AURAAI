@@ -1,91 +1,67 @@
-# 🚥 AISIMULATOR: Twitch Hackathon Hazard Suite
+# 🚥 AISIMULATOR x Twitch Hackathon Edition
 
-**AISIMULATOR** is an interactive, real-time traffic safety auditing, entity detection, and hazard simulation dashboard built for the **Codex x TwitchCon Hackathon**. Powered by **YOLO26**, OpenCV, **GPT Luna (Warden Billu)**, and Streamlit, the application offers multi-format media auditing, custom object training, automated PDF reporting, and live Twitch chat integration.
-
----
-
-## ✨ Features
-
-- **📷 Multi-Format Media Auditing**: Process images (`.jpg`, `.png`), video feeds (`.mp4`, `.avi`, `.mov`), and document policies (`.pdf`, `.docx`, `.txt`) up to 400MB.
-- **🚨 Real-Time Hazard Proximity Alerts**: Calculates spatial Euclidean distances between detected entities to trigger live visual flashing banners and Web Speech API audio announcements with a 10-second auto-close timer.
-- **👮‍♂️ Warden Billu (GPT Luna Assistant)**: An interactive, friendly traffic police assistant in the sidebar providing driving advice, fines breakdown, and road safety guidance.
-- **🧠 Custom Entity & Face Training Studio**: Register custom entity classes or faces with uploaded sample images, test detection on live webcam feeds, and generate/export custom PyTorch (`.pt`) model weights alongside `data.yaml` files.
-- **📚 100-Question Road Safety Exam**: Interactive assessment covering traffic regulations, signs, and emergency protocols, generating a downloadable **PDF Certificate of Competency** or Assessment Notice.
-- **🎮 Twitch Interactive Chat Hub**: Simulates and receives Twitch chat commands (`!hazard`, `!status`, `!billu`, `!speed`, `!brake`) to integrate directly into live stream overlays.
-- **📋 Cumulative Audit Logging & PDF Export**: Automatically tracks frame telemetry, entity counts (cars, trucks, buses, ambulances, persons with masks/disabilities), and exports comprehensive PDF/CSV reports.
+**AISIMULATOR** is an advanced AI-powered traffic simulation, entity auditing, and interactive Twitch streaming suite. Powered by **YOLO26**, OpenCV, **GPT Luna (Warden Billu)**, and Twitch Interactive Chat, this platform enables real-time hazard detection, custom model generation, automated road safety examinations, and live stream overlays.
 
 ---
 
-## 🛠️ Prerequisites & Installation
+## 🚀 Key Features
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/your-username/aisimulator.git
-cd aisimulator
-```
+### 1. 👁️ Visual Analysis Feed & Content Viewer
+* **Multi-Format Support:** Upload images (`.jpg`, `.png`), videos (`.mp4`, `.mov`, `.avi`), or documents (`.pdf`, `.docx`, `.txt`) up to 400MB.
+* **Proximity-Only Talking Alerts:** Dynamic browser speech synthesis (`SpeechSynthesisUtterance`) that triggers **only when collision proximity limits are breached**.
+* **Exact Hazard Counting & Severity Tiers:** Announces the precise number of active hazards in view and classifies threats into **Medium** or **High** severity levels with customized pitch, rate, and visual flash styling.
 
-### 2. Set Up a Virtual Environment
-```bash
-python -m venv venv
-# On Windows
-venv\Scripts\activate
-# On macOS/Linux
-source venv/bin/activate
-```
+### 2. 🎮 Twitch Hackathon Chat & OBS Overlay Hub
+* **Interactive Chat Bot:** Viewers can type `!hazard`, `!status`, or `!billu safe driving tips` to receive real-time threat reports and Warden Billu commentary.
+* **Stream Window TTS Alerts:** Automatically broadcasts incoming chat hazard commands aloud in the main dashboard window.
+* **Channel Points & Bits Redemptions:** Simulate redemptions like triggering emergency brakes or spawning AI traffic wardens.
+* **Live Hazard Voting Polls:** Real-time community consensus tracking (Safe vs. Hazardous vs. Emergency).
+* **OBS Stream Overlay HUD:** Transparent HTML/CSS browser source snippet that dynamically shifts its border and background colors (Purple ➡️ Orange ➡️ Red) based on live threat severity.
 
-### 3. Install Requirements
-Create a `requirements.txt` file (or install directly) with the following dependencies:
+### 3. 🧠 Custom Object / Face Training Studio
+* Register and train custom entities or faces with reference images.
+* Test custom detectors live via webcam snapshots.
+* Generate and export custom PyTorch (`.pt`) model packages and `data.yaml` configurations.
 
-```bash
-pip install streamlit opencv-python-headless numpy pandas pillow openai ultralytics fpdf pypdf python-docx torch
-```
-
----
-
-## 🔑 Configuration
-
-To enable **Warden Billu (GPT Luna)** assistant, set up your OpenAI API key using Streamlit's secrets management:
-
-1. Create a `.streamlit` folder in the project root.
-2. Create a `secrets.toml` file inside `.streamlit/`:
-
-```toml
-OPENAI_API_KEY = "your-openai-api-key-here"
-```
+### 4. 📚 Road Safety 100-Question Test & PDF Certification
+* Complete an automated 100-question road safety and traffic regulations exam.
+* Receive an official score, percentage evaluation, and customized Warden Billu feedback.
+* Instantly generate and download an official **PDF Certificate of Competency** (if passed ≥ 80%) or **Assessment Notice**.
 
 ---
 
-## 🚀 Running the Application
+## 🛠️ Installation & Local Setup
 
-Launch the Streamlit app:
+1. **Clone the Repository:**
+   ```bash
+   git clone https://github.com/your-username/aisimulator-twitch.git
+   cd aisimulator-twitch
+   ```
 
-```bash
-streamlit run app.py
-```
+2. **Install Dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Open your browser at `http://localhost:8501` to view the dashboard.
+3. **Configure Secrets:**
+   Create a `.streamlit/secrets.toml` file to add your OpenAI API key for Warden Billu (GPT Luna):
+   ```toml
+   OPENAI_API_KEY = "your-openai-api-key-here"
+   ```
+
+4. **Run the Streamlit App:**
+   ```bash
+   streamlit run aisimulator_app.py
+   ```
 
 ---
 
-## 📁 Project Structure
+## 📂 Project Structure
+* `aisimulator_app.py` — Main Streamlit application containing YOLO inference, telemetry, Twitch integration, and audio alerts.
+* `requirements.txt` — Python dependencies (Ultralytics, OpenCV, Streamlit, FPDF, PyPDF, python-docx, etc.).
+* `README.md` — Project documentation and setup guide.
 
-```text
-├── app.py                   # Main Streamlit application entry point
-├── README.md                # Project documentation
-├── .streamlit/
-│   └── secrets.toml         # Secret API keys configuration
-└── temp_uploaded_traffic.mp4# Temporary video cache for file processing
-```
-Project Credits
-Project Name: AURA CHATBOT
-
-Project Designed & Developed By: SKYWOOD INNOVATORS & AI MARKHORS
-
-Project Lead: Engr. Bilal Mehmood
-
-Project Vision: To build an intelligent sports assistant that combines AI-powered conversations, sports statistics, player analysis, and professional reporting in one platform.
 ---
 
-## 📜 License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+## 🏆 Hackathon Credits
+Developed for the **Codex x TwitchCon Hackathon Suite**, combining cutting-edge computer vision safety auditing with interactive live-streaming engagement!
